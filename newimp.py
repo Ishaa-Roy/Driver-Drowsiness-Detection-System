@@ -10,11 +10,9 @@ from pygame import mixer
 from tensorflow.keras.models import load_model
 from datetime import datetime
 
-# === SETTINGS ===
 ALERT_THRESHOLD = 15
 BREAK_REMINDER_INTERVAL = 3600  # seconds (1 hour)
 
-# === INITIALIZE ===
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 model = load_model('models/cnncat2.h5', compile=False)
 mixer.init()
@@ -34,13 +32,11 @@ def mouth_aspect_ratio(mouth):
     mar = (A + B) / (2.0 * C)
     return mar
 
-# === SESSION LOGGING ===
 def log_event(event):
     with open("sleep_log.csv", 'a', newline='') as f:
         writer = csv.writer(f)
         writer.writerow([datetime.now(), event])
  
-# === START VIDEO ===
 cap = cv2.VideoCapture(0)
 font = cv2.FONT_HERSHEY_COMPLEX_SMALL
 score = 0
@@ -58,7 +54,6 @@ while True:
     left_eye = leye.detectMultiScale(gray)
     right_eye = reye.detectMultiScale(gray)
 
-    # Eye prediction
     for (x, y, w, h) in right_eye:
         r_eye = frame[y:y+h, x:x+w]
         r_eye = cv2.cvtColor(r_eye, cv2.COLOR_BGR2GRAY)
@@ -83,7 +78,6 @@ while True:
         cv2.putText(frame, "Eyes Open", (10, height - 20), font, 1, (255, 255, 255), 1)
     score = max(score, 0)
 
-    # === YAWN DETECTION ===
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     rects = detector(gray, 0)
     for rect in rects:
@@ -97,7 +91,6 @@ while True:
             engine.runAndWait()
             log_event("Yawn detected")
 
-    # === ALERT IF TOO SLEEPY ===
     if score > ALERT_THRESHOLD:
         cv2.imwrite(os.path.join(os.getcwd(), 'drowsy.jpg'), frame)
         try:
@@ -112,7 +105,6 @@ while True:
     else:
         thicc = max(2, thicc - 2)
 
-    # === BREAK REMINDER ===
     elapsed = time.time() - start_time
     if elapsed > BREAK_REMINDER_INTERVAL:
         engine.say("You've been working for a while. Time for a 5 minute break!")
@@ -120,7 +112,6 @@ while True:
         log_event("Break reminder")
         start_time = time.time()
 
-    # === DISPLAY ===
     cv2.putText(frame, 'Score:' + str(score), (120, height - 20), font, 1, (255, 255, 255), 1)
     cv2.imshow('frame', frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
